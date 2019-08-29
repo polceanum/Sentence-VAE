@@ -82,7 +82,7 @@ def main(args):
 
         return NLL_loss, KL_loss, KL_weight
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate, amsgrad=True)
 
     tensor = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.Tensor
     step = 0
@@ -138,9 +138,9 @@ def main(args):
                     tracker['ELBO'] = torch.cat((tracker['ELBO'], loss.data))
 
                 if args.tensorboard_logging:
-                    writer.add_scalar("%s/ELBO"%split.upper(), loss.data[0], epoch*len(data_loader) + iteration)
-                    writer.add_scalar("%s/NLL Loss"%split.upper(), NLL_loss.data[0]/batch_size, epoch*len(data_loader) + iteration)
-                    writer.add_scalar("%s/KL Loss"%split.upper(), KL_loss.data[0]/batch_size, epoch*len(data_loader) + iteration)
+                    writer.add_scalar("%s/ELBO"%split.upper(), loss.item(), epoch*len(data_loader) + iteration)
+                    writer.add_scalar("%s/NLL Loss"%split.upper(), NLL_loss.item()/batch_size, epoch*len(data_loader) + iteration)
+                    writer.add_scalar("%s/KL Loss"%split.upper(), KL_loss.item()/batch_size, epoch*len(data_loader) + iteration)
                     writer.add_scalar("%s/KL Weight"%split.upper(), KL_weight, epoch*len(data_loader) + iteration)
 
                 if iteration % args.print_every == 0 or iteration+1 == len(data_loader):
@@ -153,7 +153,7 @@ def main(args):
                     tracker['target_sents'] += idx2word(batch['target'].data, i2w=datasets['train'].get_i2w(), pad_idx=datasets['train'].pad_idx)
                     tracker['z'] = torch.cat((tracker['z'], z.data), dim=0)
 
-            print("%s Epoch %02d/%i, Mean ELBO %9.4f"%(split.upper(), epoch, args.epochs, torch.mean(tracker['ELBO'])))
+            print("%s Epoch %02d/%i, Mean ELBO %9.4f\n"%(split.upper(), epoch, args.epochs, torch.mean(tracker['ELBO'])))
 
             if args.tensorboard_logging:
                 writer.add_scalar("%s-Epoch/ELBO"%split.upper(), torch.mean(tracker['ELBO']), epoch)
