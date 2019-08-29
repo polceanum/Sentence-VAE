@@ -151,6 +151,13 @@ class SentenceVAE(nn.Module):
         else:
             hidden = hidden.unsqueeze(0)
 
+        if isinstance(self.decoder_rnn, nn.LSTM):
+            h_t = hidden
+            c_t = torch.zeros_like(h_t)
+            if torch.cuda.is_available():
+                c_t=c_t.cuda()
+            hidden = (h_t, c_t)
+
         # required for dynamic stopping of sentence generation
         sequence_idx = torch.arange(0, batch_size, out=self.tensor()).long() # all idx of batch
         sequence_running = torch.arange(0, batch_size, out=self.tensor()).long() # all idx of batch which are still generating
@@ -200,7 +207,10 @@ class SentenceVAE(nn.Module):
             # prune input and hidden state according to local update
             if len(running_seqs) > 0:
                 input_sequence = input_sequence[running_seqs]
-                hidden = hidden[:, running_seqs]
+                if isinstance(hidden, tuple):
+                    hidden = (hidden[0][:, running_seqs], hidden[1][:, running_seqs])
+                else:
+                    hidden = hidden[:, running_seqs]
 
                 running_seqs = torch.arange(0, len(running_seqs), out=self.tensor()).long()
 
