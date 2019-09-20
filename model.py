@@ -86,11 +86,14 @@ class SentenceVAE(nn.Module):
         z = z * std + mean
 
         # DECODER
-        h_t = self.latent2hidden(z)
-        c_t = torch.zeros_like(h_t)
-        if torch.cuda.is_available():
-            c_t=c_t.cuda()
-        hidden = (h_t, c_t)
+        if isinstance(self.decoder_rnn, nn.LSTM):
+            h_t = self.latent2hidden(z)
+            c_t = torch.zeros_like(h_t)
+            if torch.cuda.is_available():
+                c_t=c_t.cuda()
+            hidden = (h_t, c_t)
+        else:
+            hidden = self.latent2hidden(z)
 
         if self.bidirectional or self.num_layers > 1:
             # unflatten hidden state
